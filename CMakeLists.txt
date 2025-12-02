@@ -12,13 +12,17 @@ find_package(rclcpp REQUIRED)
 find_package(rclpy REQUIRED)
 find_package(turtlesim REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(std_msgs REQUIRED)
 # uncomment the following section in order to fill in
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
 add_executable(ui src/ui.cpp)
-ament_target_dependencies(ui rclcpp turtlesim geometry_msgs)
+ament_target_dependencies(ui rclcpp turtlesim geometry_msgs std_msgs)
 
 install(TARGETS ui DESTINATION lib/${PROJECT_NAME})
+add_executable(distance src/distance.cpp)
+ament_target_dependencies(distance rclcpp turtlesim geometry_msgs std_msgs)
+install(TARGETS distance DESTINATION lib/${PROJECT_NAME})
 
 #install py modules
 ament_python_install_package(${PROJECT_NAME})

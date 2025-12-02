@@ -1,6 +1,7 @@
 #include "rclcpp/rclcpp.hpp"
 #include "turtlesim/msg/pose.hpp"
 #include "geometry_msgs/msg/twist.hpp"
+#include "std_msgs/msg/int32.hpp"
 #include <iostream>
 #include <string>
 #include <limits>
@@ -15,24 +16,25 @@ class ui: public rclcpp::Node
     {
         pub_turtle1 = this->create_publisher<geometry_msgs::msg::Twist>("/turtle1/cmd_vel", 10);
         pub_turtle2 = this->create_publisher<geometry_msgs::msg::Twist>("/turtle2/cmd_vel", 10);
-        sub_turtle1 = this->create_subscription<turtlesim::msg::Pose>("/turtle1/pose", 10, std::bind(&ui::callback_turtle1, this, _1));
-        sub_turtle2 = this->create_subscription<turtlesim::msg::Pose>("/turtle2/pose", 10, std::bind(&ui::callback_turtle2, this, _1));
+        sub_safety = this->create_subscription<std_msgs::msg::Int32>("/safety_status", 10, std::bind(&ui::callback_safety, this, _1));
         timer_ = this->create_wall_timer(std::chrono::milliseconds(50), std::bind(&ui::execute, this));
     }
     int counter = 20;
-    double x_1 = 2.0;
-    double x_2 = 8.0;
-    double y_1 = 2.0;
-    double y_2 = 8.0;
+    int safety_status = 0;
     int turtle_id;
     double v, alpha;
 
 
     private:
 
+    void callback_safety(const std_msgs::msg::Int32::SharedPtr msg)
+    {
+        safety_status = msg->data;
+    }
+
     void execute(){
 
-        if(distance() == true){ 
+        if(safety_status == 0){ 
             
             if (counter >= 20){
                
@@ -89,45 +91,49 @@ class ui: public rclcpp::Node
             }else{
                 counter += 1;
             }
-        }else{
+        }else if(safety_status == 1){
 
-            double x = std::pow(x_1 - x_2, 2);
-            double y = std::pow(y_1 - y_2, 2);
-            double actual_distance = std::sqrt(x+y);
-
-            
-            if(actual_distance < 1 ){
-                stop();
-                std::cout << "Tartarughe troppo vicine \n";
-                if(v == 0 && alpha == 0){
-                    message.linear.x = 1;
+            stop();
+            std::cout << "Tartarughe troppo vicine \n";
+            if(v == 0 && alpha == 0){
+                message.linear.x = 1;
+            }else{
+                if(v < 0){
+                    message.linear.x = 1.5;
+                    message.angular.z = 0.0;
                 }else{
-                    message.linear.x = -1.0;
+                    message.linear.x = -1.5;
                     message.angular.z = 0.0;
                 }
-                if(turtle_id == 1){
-                    pub_turtle1->publish(message);
-                }else{
-                    pub_turtle2->publish(message);
-                }
+            }
+            if(turtle_id == 1){
+                pub_turtle1->publish(message);
             }else{
-                stop();
-                std::cout << "Tartarughe vicine al bordo \n";
-                if(v == 0 && alpha == 0){
-                    message.linear.x = 1;
+                pub_turtle2->publish(message);
+            }
+        }else{
+            stop();
+            std::cout << "Tartarughe vicine al bordo \n";
+            if(v == 0 && alpha == 0){
+                message.linear.x = 1;
+            }else{
+                if(v < 0){
+                    message.linear.x = 1.5;
+                    message.angular.z = 0.0;
                 }else{
-                    message.linear.x = -v/4;
-                    message.angular.z = -alpha/4;
-                }
-                if(turtle_id == 1){
-                    pub_turtle1->publish(message);
-                }else{
-                    pub_turtle2->publish(message);
+                    message.linear.x = -1.5;
+                    message.angular.z = 0.0;
                 }
             }
-            
+            if(turtle_id == 1){
+                pub_turtle1->publish(message);
+            }else{
+                pub_turtle2->publish(message);
+            }
         }
+            
     }
+    
 
     void stop(){
         message.linear.x = 0.0;
@@ -136,34 +142,8 @@ class ui: public rclcpp::Node
         pub_turtle2->publish(message);
     }
 
-    void callback_turtle1(const turtlesim::msg::Pose::SharedPtr msg)
-    {
-        x_1 = msg->x;
-        y_1 = msg->y;
-    }
-
-    void callback_turtle2(const turtlesim::msg::Pose::SharedPtr msg)
-    {
-        x_2 = msg->x;
-        y_2 = msg->y;
-    }
     
-    bool distance()
-    {
-        double x = std::pow(x_1 - x_2, 2);
-        double y = std::pow(y_1 - y_2, 2);
-        double distance = std::sqrt(x+y);
-        if(distance < 1 || x_1 < 1 ||  x_1 > 10 || x_2 < 1 ||  x_2 > 10 || y_1 < 1 ||  y_1 > 10 || y_2 < 1 ||  y_2 > 10){
-            
-            return false;
-        }
-
-        return true;
-    }
-    
-
-    rclcpp::Subscription<turtlesim::msg::Pose>::SharedPtr sub_turtle1;
-    rclcpp::Subscription<turtlesim::msg::Pose>::SharedPtr sub_turtle2;
+    rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr sub_safety;
     rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr pub_turtle1;
     rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr pub_turtle2;
     rclcpp::TimerBase::SharedPtr timer_;
