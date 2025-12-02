@@ -90,25 +90,42 @@ class ui: public rclcpp::Node
                 counter += 1;
             }
         }else{
-            stop();
-            std::cout << "Tartarughe troppo vicine o vicine al bordo \n";
-            if(turtle_id == 1){
+
+            double x = std::pow(x_1 - x_2, 2);
+            double y = std::pow(y_1 - y_2, 2);
+            double actual_distance = std::sqrt(x+y);
+
+            
+            if(actual_distance < 1 ){
+                stop();
+                std::cout << "Tartarughe troppo vicine \n";
                 if(v == 0 && alpha == 0){
                     message.linear.x = 1;
                 }else{
-                    message.linear.x = -v;
-                    message.angular.z = -alpha;
+                    message.linear.x = -1.0;
+                    message.angular.z = 0.0;
                 }
-                pub_turtle1->publish(message);
+                if(turtle_id == 1){
+                    pub_turtle1->publish(message);
+                }else{
+                    pub_turtle2->publish(message);
+                }
             }else{
+                stop();
+                std::cout << "Tartarughe vicine al bordo \n";
                 if(v == 0 && alpha == 0){
                     message.linear.x = 1;
                 }else{
-                    message.linear.x = -v;
-                    message.angular.z = -alpha;
+                    message.linear.x = -v/4;
+                    message.angular.z = -alpha/4;
                 }
-                pub_turtle2->publish(message);
+                if(turtle_id == 1){
+                    pub_turtle1->publish(message);
+                }else{
+                    pub_turtle2->publish(message);
+                }
             }
+            
         }
     }
 
