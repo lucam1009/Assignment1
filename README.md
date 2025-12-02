@@ -5,4 +5,5 @@ ros2 run turtlesim turtlesim_node
 ros2 run assignment1_rt turtle_spawn
 ros2 run assignment1_rt ui
 ros2 run assignment1_rt distance
+there is a folder contining a __init__.py file necessary to make the turtle_spawn.py file works in a c_make file.
 enjoy...
